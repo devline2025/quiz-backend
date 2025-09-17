@@ -110,7 +110,7 @@ app.post("/getVoucher", async (req, res) => {
     // 3. 更新該列 (D=TRUE, E=user_id)
     await sheets.spreadsheets.values.update({
       spreadsheetId: SHEET_ID,
-      range: `小測驗禮卷!D${rowNumber}:E${rowNumber}`,
+      range:`小測驗禮卷!D${rowNumber}:F${rowNumber}`, 
       valueInputOption: "RAW",
       requestBody: { values: [["TRUE", user_id, new Date().toISOString()]] },
     });
