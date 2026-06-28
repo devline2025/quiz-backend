@@ -1,3 +1,4 @@
+require("dotenv").config();
 const express = require("express");
 const { Pool } = require("pg");
 const cors = require("cors");
@@ -6,7 +7,7 @@ const { google } = require("googleapis");
 const app = express();
 
 // === API Key 設定 ===
-const API_KEY = process.env.API_KEY || "3jnDfg4nw0wSDkb4295NBJkdwhuf378S"; // 測試先給固定值
+const API_KEY = process.env.API_KEY;
 
 // === CORS 設定 ===
 const corsOptions = {
@@ -29,12 +30,12 @@ app.use((req, res, next) => {
 
 // === PostgreSQL 連線 (存答題紀錄) ===
 const pool = new Pool({
-  connectionString: process.env.DATABASE_URL || "postgresql://huang@localhost:5432/quizdatabase",
-  ssl: process.env.DATABASE_URL ? { rejectUnauthorized: false } : false,
+  connectionString: process.env.DATABASE_URL,
+  ssl: process.env.DATABASE_URL && !process.env.DATABASE_URL.includes("localhost") && !process.env.DATABASE_URL.includes("127.0.0.1") ? { rejectUnauthorized: false } : false,
 });
 
 // === Google Sheets 設定 (存禮卷) ===
-const SHEET_ID = "1CFfrKznsAXW3o2llGnAhDNdEl4atzhHBIFNt_8uBl90";  // ⚠️ 換成你的 Google Sheet ID
+const SHEET_ID = process.env.SHEET_ID;  // 讀取環境變數裡的 Google Sheet ID
 const RANGE = "小測驗禮卷!A:E";       // ⚠️ 假設欄位是 A-E: id, voucher_url, code, used, user_id
 
 async function getSheetsClient() {
@@ -105,7 +106,7 @@ app.post("/getVoucher", async (req, res) => {
 
     const voucher = rows[index][1];
     const code = rows[index][2];
-    const rowNumber = index + 1; // Google Sheets 從 1 開始
+    const rowNumber = index + 2; // Google Sheets 從 1 開始
 
     // 3. 更新該列 (D=TRUE, E=user_id)
     await sheets.spreadsheets.values.update({
