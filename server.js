@@ -54,12 +54,12 @@ app.get("/", (req, res) => {
 
 // === 新增答題紀錄 ===
 app.post("/answers", async (req, res) => {
-  const { user_id, session_id, question_id, selected_option, is_correct } = req.body;
+  const { user_id, session_id, question_id, selected_option, is_correct, quiz_id } = req.body;
   try {
     const result = await pool.query(
-      `INSERT INTO quiz_answers (user_id, session_id, question_id, selected_option, is_correct, created_at)
-       VALUES ($1, $2, $3, $4, $5, NOW()) RETURNING *`,
-      [user_id, session_id, question_id, selected_option, is_correct]
+      `INSERT INTO quiz_answers (user_id, session_id, question_id, selected_option, is_correct, quiz_id, created_at)
+       VALUES ($1, $2, $3, $4, $5, $6, NOW()) RETURNING *`,
+      [user_id, session_id, question_id, selected_option, is_correct, quiz_id]
     );
     res.json(result.rows[0]);
   } catch (err) {
