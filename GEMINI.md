@@ -34,7 +34,8 @@ The application is configured using environment variables. Default values are fa
 | :--- | :--- | :--- |
 | `PORT` | The port on which the Express server listens. | `3000` |
 | `DATABASE_URL` | PostgreSQL connection connection URI. | `postgresql://huang@localhost:5432/quizdatabase` |
-| `API_KEY` | Header key used to authorize API requests. | `3jnDfg4nw0wSDkb4295NBJkdwhuf378S` |
+| `ALLOWED_ORIGINS` | Comma-separated browser origins permitted to submit answers. | Local port `5501` and the production GitHub Pages origin |
+| `ADMIN_API_KEY` | Server-only key for answer retrieval and voucher administration. | None; required for administrative routes |
 
 ### Database Initialization
 
@@ -71,7 +72,9 @@ The voucher system connects to a Google Sheets document:
 ## 4. Security & CORS
 
 ### Request Security
-A custom middleware enforces that **every incoming request** (except preflight `OPTIONS` requests) must include the `x-api-key` header matching the active `API_KEY` value. If missing or incorrect, a `403 Forbidden` response is returned.
+`POST /answers` is a public browser endpoint protected by an origin allowlist, per-IP rate limiting, a request-size limit, and strict payload validation. Browser code must not contain a shared secret.
+
+Administrative routes require `x-admin-key` matching `ADMIN_API_KEY`. The key must exist only in the Render environment and must never be included in frontend code.
 
 ### CORS Settings
 Cross-Origin Resource Sharing is enabled for specific origins:
@@ -84,7 +87,7 @@ Cross-Origin Resource Sharing is enabled for specific origins:
 
 ## 5. API Reference
 
-All requests must be accompanied by the header: `x-api-key: <API_KEY>`
+Only administrative requests use the header `x-admin-key: <ADMIN_API_KEY>`.
 
 ### 1. Health Check
 *   **Route:** `GET /`
@@ -101,19 +104,21 @@ All requests must be accompanied by the header: `x-api-key: <API_KEY>`
     ```json
     {
       "user_id": "user123",
-      "session_id": "sess_abc",
-      "question_id": "q_01",
+      "session_id": "550e8400-e29b-41d4-a716-446655440000",
+      "question_id": "k_q1",
       "selected_option": "B",
-      "is_correct": true
+      "is_correct": true,
+      "quiz_id": "pregnant_ch2"
     }
     ```
 *   **Response:**
-    *   **Status:** `200 OK`
-    *   **Body:** JSON object representing the newly created record in `quiz_answers`.
+    *   **Status:** `201 Created`
+    *   **Body:** `{ "ok": true }`.
 
 ### 3. Retrieve All Answers
 *   **Route:** `GET /answers`
 *   **Description:** Retrieves all recorded quiz answers from the database.
+*   **Authentication:** Requires `x-admin-key`. Supports `?limit=1..500`, defaulting to 100.
 *   **Response:**
     *   **Status:** `200 OK`
     *   **Body:** Array of answer objects sorted by `id DESC`.
@@ -121,6 +126,7 @@ All requests must be accompanied by the header: `x-api-key: <API_KEY>`
 ### 4. Claim Voucher
 *   **Route:** `POST /getVoucher`
 *   **Description:** Allocates an unassigned voucher URL and code to a specified user. If the user already claimed a voucher, returns the existing details.
+*   **Authentication:** Requires `x-admin-key`.
 *   **Content-Type:** `application/json`
 *   **Payload Schema:**
     ```json

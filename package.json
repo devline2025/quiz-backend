@@ -4,7 +4,10 @@
   "description": "Quiz backend server",
   "main": "server.js",
   "scripts": {
-    "start": "node server.js"
+    "start": "node server.js",
+    "lint": "node --check server.js",
+    "test": "node --test",
+    "check": "npm run lint && npm test"
   },
   "keywords": [],
   "author": "",
